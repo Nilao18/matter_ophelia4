@@ -1,0 +1,21 @@
+/* Ophelia-IV MiniEV - override nRF54L15 DK defaults */
+
+/* Restore full RRAM and SRAM */
+&cpuapp_rram {
+    reg = <0x0 DT_SIZE_K(1524)>;
+};
+
+&cpuapp_sram {
+    reg = <0x20000000 DT_SIZE_K(256)>;
+    ranges = <0x0 0x20000000 0x40000>;
+};
+
+/* No external flash on Ophelia-IV MiniEV */
+&mx25r64 {
+    status = "disabled";
+};
+
+/* Disable UART hw-flow-control */
+&uart20 {
+    /delete-property/ hw-flow-control;
+};
