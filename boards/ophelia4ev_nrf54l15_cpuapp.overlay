@@ -1,1 +1,20 @@
+/* Ophelia-IV MiniEV - no external SPI flash, no user LEDs/buttons */
 
+/* Restore full RRAM and SRAM (no FLPR reservation) */
+&cpuapp_rram {
+    reg = <0x0 DT_SIZE_K(1524)>;
+};
+
+&cpuapp_sram {
+    reg = <0x20000000 DT_SIZE_K(256)>;
+    ranges = <0x0 0x20000000 0x40000>;
+};
+
+/* MiniEV has no external SPI flash */
+&spi00 {
+    status = "disabled";
+};
+
+&mx25r64 {
+    status = "disabled";
+};
