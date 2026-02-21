@@ -37,6 +37,7 @@ config DFU_MULTI_IMAGE_PACKAGE_APP
 	default y
 
 config PM_EXTERNAL_FLASH_MCUBOOT_SECONDARY
+	default n if BOARD_OPHELIA4EV
 	default y
 
 #### DFU network core configuration
