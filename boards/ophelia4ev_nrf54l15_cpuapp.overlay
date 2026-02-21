@@ -18,3 +18,8 @@
 &mx25r64 {
     status = "disabled";
 };
+
+/* MiniEV has no LFXO crystal (Q1, C9, C10 not assembled) - use LFRC */
+&lfxo {
+    status = "disabled";
+};
