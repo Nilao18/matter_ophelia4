@@ -1,1 +1,31 @@
-
+mcuboot:
+  address: 0x0
+  region: flash_primary
+  size: 0xD000
+mcuboot_pad:
+  address: 0xD000
+  region: flash_primary
+  size: 0x800
+app:
+  address: 0xD800
+  region: flash_primary
+  size: 0x165800
+mcuboot_primary:
+  orig_span: &id001
+  - mcuboot_pad
+  - app
+  span: *id001
+  address: 0xD000
+  region: flash_primary
+  size: 0x166000
+mcuboot_primary_app:
+  orig_span: &id002
+  - app
+  span: *id002
+  address: 0xD800
+  region: flash_primary
+  size: 0x165800
+settings_storage:
+  address: 0x173000
+  region: flash_primary
+  size: 0xA000
