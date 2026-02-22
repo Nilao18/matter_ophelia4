@@ -14,3 +14,8 @@
  */
 
 #pragma once
+
+/* No MCUboot bootloader - provide fallback for OTA code that references MCUboot config */
+#ifndef CONFIG_UPDATEABLE_IMAGE_NUMBER
+#define CONFIG_UPDATEABLE_IMAGE_NUMBER 1
+#endif
