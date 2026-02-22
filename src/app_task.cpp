@@ -16,6 +16,8 @@
 
 #include <zephyr/logging/log.h>
 
+#include "humidity_sensor.h"
+
 LOG_MODULE_DECLARE(app, CONFIG_CHIP_APP_LOG_LEVEL);
 
 using namespace ::chip;
@@ -26,6 +28,12 @@ CHIP_ERROR AppTask::Init()
 {
 	/* Initialize Matter stack */
 	ReturnErrorOnFailure(Nrf::Matter::PrepareServer());
+
+	/* Add Humidity Sensor endpoint */
+	ReturnErrorOnFailure(InitHumiditySensorEndpoint());
+
+	/* Set initial humidity value (50.00% RH for testing) */
+	SetMeasuredHumidity(5000);
 
 	if (!Nrf::GetBoard().Init()) {
 		LOG_ERR("User interface initialization failed.");
