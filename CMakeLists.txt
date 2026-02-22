@@ -33,6 +33,7 @@ target_sources(app PRIVATE
   src/app_task.cpp
   src/main.cpp
   src/dfu_stub.c
+  src/humidity_sensor.cpp
 )
 
 ncs_configure_data_model()
