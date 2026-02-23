@@ -19,7 +19,7 @@ using chip::Protocols::InteractionModel::Status;
 
 /* Endpoint 1 configuration */
 static constexpr EndpointId kHumidityEndpointId = 1;
-static constexpr uint16_t kHumidityDeviceType = 0x0307; /* Humidity Sensor */
+static constexpr uint16_t kHumidityDeviceType = 0x0015; /* Humidity Sensor */
 
 /* Attribute storage for Relative Humidity Measurement cluster (0x0405) */
 static uint16_t sMeasuredValue = 0;
@@ -29,6 +29,22 @@ static uint16_t sMaxMeasuredValue = 10000;
 /* Attribute storage for Identify cluster (0x0003) */
 static uint16_t sIdentifyTime = 0;
 static uint8_t sIdentifyType = 0; /* None */
+
+/* Attribute storage for BooleanState cluster (0x0045) */
+static bool sStateValue = false; /* false = closed, true = open */
+
+/* BooleanState cluster attributes */
+static constexpr EmberAfAttributeMetadata sBooleanStateAttrs[] = {
+    /* StateValue */
+    { ZAP_EMPTY_DEFAULT(), 0x0000, 1, ZAP_TYPE(BOOLEAN),
+      ZAP_ATTRIBUTE_MASK(EXTERNAL_STORAGE) | ZAP_ATTRIBUTE_MASK(READABLE) },
+    /* FeatureMap */
+    { ZAP_EMPTY_DEFAULT(), 0xFFFC, 4, ZAP_TYPE(BITMAP32),
+      ZAP_ATTRIBUTE_MASK(EXTERNAL_STORAGE) | ZAP_ATTRIBUTE_MASK(READABLE) },
+    /* ClusterRevision */
+    { ZAP_SIMPLE_DEFAULT(1), 0xFFFD, 2, ZAP_TYPE(INT16U),
+      ZAP_ATTRIBUTE_MASK(READABLE) },
+};
 
 // clang-format off
 
@@ -134,6 +150,18 @@ static constexpr EmberAfCluster sHumidityClusters[] = {
         .eventList = nullptr,
         .eventCount = 0,
     },
+    {
+        .clusterId = BooleanState::Id,
+        .attributes = sBooleanStateAttrs,
+        .attributeCount = ARRAY_SIZE(sBooleanStateAttrs),
+        .clusterSize = 0,
+        .mask = ZAP_CLUSTER_MASK(SERVER),
+        .functions = nullptr,
+        .acceptedCommandList = nullptr,
+        .generatedCommandList = nullptr,
+        .eventList = nullptr,
+        .eventCount = 0,
+    },
 };
 
 static constexpr EmberAfEndpointType sHumidityEndpoint = {
@@ -192,6 +220,18 @@ Status emberAfExternalAttributeReadCallback(
             return Status::Success;
         }
         if (attrId == 0xFFFC) {
+            uint32_t featureMap = 0;
+            memcpy(buffer, &featureMap, sizeof(featureMap));
+            return Status::Success;
+        }
+    }
+
+    if (clusterId == BooleanState::Id) {
+        if (attrId == 0x0000) { /* StateValue */
+            memcpy(buffer, &sStateValue, sizeof(sStateValue));
+            return Status::Success;
+        }
+        if (attrId == 0xFFFC) { /* FeatureMap */
             uint32_t featureMap = 0;
             memcpy(buffer, &featureMap, sizeof(featureMap));
             return Status::Success;
