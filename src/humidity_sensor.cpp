@@ -22,12 +22,33 @@ static constexpr EndpointId kHumidityEndpointId = 1;
 static constexpr uint16_t kHumidityDeviceType = 0x0307; /* Humidity Sensor */
 
 /* Attribute storage for Relative Humidity Measurement cluster (0x0405) */
-static uint16_t sMeasuredValue = 0;      /* MeasuredValue: 0 = 0.00% RH */
-static uint16_t sMinMeasuredValue = 0;   /* MinMeasuredValue: 0% */
-static uint16_t sMaxMeasuredValue = 10000; /* MaxMeasuredValue: 100.00% */
+static uint16_t sMeasuredValue = 0;
+static uint16_t sMinMeasuredValue = 0;
+static uint16_t sMaxMeasuredValue = 10000;
 
-/* Attribute metadata for RelativeHumidityMeasurement cluster */
+/* Attribute storage for Identify cluster (0x0003) */
+static uint16_t sIdentifyTime = 0;
+static uint8_t sIdentifyType = 0; /* None */
+
 // clang-format off
+
+/* Identify cluster attributes (0x0003) - MANDATORY for Humidity Sensor */
+static constexpr EmberAfAttributeMetadata sIdentifyAttrs[] = {
+    /* IdentifyTime */
+    { ZAP_SIMPLE_DEFAULT(0), 0x0000, 2, ZAP_TYPE(INT16U),
+      ZAP_ATTRIBUTE_MASK(EXTERNAL_STORAGE) | ZAP_ATTRIBUTE_MASK(READABLE) | ZAP_ATTRIBUTE_MASK(WRITABLE) },
+    /* IdentifyType */
+    { ZAP_SIMPLE_DEFAULT(0), 0x0001, 1, ZAP_TYPE(ENUM8),
+      ZAP_ATTRIBUTE_MASK(EXTERNAL_STORAGE) | ZAP_ATTRIBUTE_MASK(READABLE) },
+    /* FeatureMap */
+    { ZAP_EMPTY_DEFAULT(), 0xFFFC, 4, ZAP_TYPE(BITMAP32),
+      ZAP_ATTRIBUTE_MASK(EXTERNAL_STORAGE) | ZAP_ATTRIBUTE_MASK(READABLE) },
+    /* ClusterRevision */
+    { ZAP_SIMPLE_DEFAULT(4), 0xFFFD, 2, ZAP_TYPE(INT16U),
+      ZAP_ATTRIBUTE_MASK(READABLE) },
+};
+
+/* RelativeHumidityMeasurement cluster attributes (0x0405) */
 static constexpr EmberAfAttributeMetadata sHumidityAttrs[] = {
     /* MeasuredValue */
     { ZAP_EMPTY_DEFAULT(), 0x0000, 2, ZAP_TYPE(INT16U),
@@ -46,6 +67,7 @@ static constexpr EmberAfAttributeMetadata sHumidityAttrs[] = {
       ZAP_ATTRIBUTE_MASK(READABLE) },
 };
 
+/* Descriptor cluster attributes (0x001D) */
 static constexpr EmberAfAttributeMetadata sDescriptorAttrs[] = {
     /* DeviceTypeList */
     { ZAP_EMPTY_DEFAULT(), 0x0000, 0, ZAP_TYPE(ARRAY),
@@ -68,6 +90,13 @@ static constexpr EmberAfAttributeMetadata sDescriptorAttrs[] = {
 };
 // clang-format on
 
+/* Identify command lists */
+static constexpr CommandId sIdentifyAcceptedCommands[] = {
+    0x0000, /* Identify */
+    0x0040, /* TriggerEffect */
+    kInvalidCommandId,
+};
+
 static constexpr EmberAfCluster sHumidityClusters[] = {
     {
         .clusterId = Descriptor::Id,
@@ -77,6 +106,18 @@ static constexpr EmberAfCluster sHumidityClusters[] = {
         .mask = ZAP_CLUSTER_MASK(SERVER),
         .functions = nullptr,
         .acceptedCommandList = nullptr,
+        .generatedCommandList = nullptr,
+        .eventList = nullptr,
+        .eventCount = 0,
+    },
+    {
+        .clusterId = Identify::Id,
+        .attributes = sIdentifyAttrs,
+        .attributeCount = ARRAY_SIZE(sIdentifyAttrs),
+        .clusterSize = 0,
+        .mask = ZAP_CLUSTER_MASK(SERVER),
+        .functions = nullptr,
+        .acceptedCommandList = sIdentifyAcceptedCommands,
         .generatedCommandList = nullptr,
         .eventList = nullptr,
         .eventCount = 0,
@@ -101,7 +142,6 @@ static constexpr EmberAfEndpointType sHumidityEndpoint = {
     .endpointSize = 0,
 };
 
-/* Device type array - must be a static array, not inline initializer */
 static constexpr EmberAfDeviceType sDeviceTypeArray[] = {
     { kHumidityDeviceType, 2 },
 };
@@ -120,19 +160,15 @@ Status emberAfExternalAttributeReadCallback(
         return Status::Failure;
     }
 
-    if (clusterId == RelativeHumidityMeasurement::Id) {
-        uint16_t attrId = attributeMetadata->attributeId;
+    uint16_t attrId = attributeMetadata->attributeId;
 
-        if (attrId == 0x0000) { /* MeasuredValue */
-            memcpy(buffer, &sMeasuredValue, sizeof(sMeasuredValue));
+    if (clusterId == Identify::Id) {
+        if (attrId == 0x0000) { /* IdentifyTime */
+            memcpy(buffer, &sIdentifyTime, sizeof(sIdentifyTime));
             return Status::Success;
         }
-        if (attrId == 0x0001) { /* MinMeasuredValue */
-            memcpy(buffer, &sMinMeasuredValue, sizeof(sMinMeasuredValue));
-            return Status::Success;
-        }
-        if (attrId == 0x0002) { /* MaxMeasuredValue */
-            memcpy(buffer, &sMaxMeasuredValue, sizeof(sMaxMeasuredValue));
+        if (attrId == 0x0001) { /* IdentifyType */
+            memcpy(buffer, &sIdentifyType, sizeof(sIdentifyType));
             return Status::Success;
         }
         if (attrId == 0xFFFC) { /* FeatureMap */
@@ -142,13 +178,51 @@ Status emberAfExternalAttributeReadCallback(
         }
     }
 
+    if (clusterId == RelativeHumidityMeasurement::Id) {
+        if (attrId == 0x0000) {
+            memcpy(buffer, &sMeasuredValue, sizeof(sMeasuredValue));
+            return Status::Success;
+        }
+        if (attrId == 0x0001) {
+            memcpy(buffer, &sMinMeasuredValue, sizeof(sMinMeasuredValue));
+            return Status::Success;
+        }
+        if (attrId == 0x0002) {
+            memcpy(buffer, &sMaxMeasuredValue, sizeof(sMaxMeasuredValue));
+            return Status::Success;
+        }
+        if (attrId == 0xFFFC) {
+            uint32_t featureMap = 0;
+            memcpy(buffer, &featureMap, sizeof(featureMap));
+            return Status::Success;
+        }
+    }
+
+    return Status::Failure;
+}
+
+/* External attribute write callback (needed for Identify IdentifyTime) */
+Status emberAfExternalAttributeWriteCallback(
+    EndpointId endpoint, ClusterId clusterId,
+    const EmberAfAttributeMetadata *attributeMetadata,
+    uint8_t *buffer)
+{
+    if (endpoint != kHumidityEndpointId) {
+        return Status::Failure;
+    }
+
+    if (clusterId == Identify::Id && attributeMetadata->attributeId == 0x0000) {
+        memcpy(&sIdentifyTime, buffer, sizeof(sIdentifyTime));
+        return Status::Success;
+    }
+
     return Status::Failure;
 }
 
 CHIP_ERROR InitHumiditySensorEndpoint()
 {
     CHIP_ERROR err = emberAfSetDynamicEndpoint(
-        0, /* dynamic endpoint index */
+        0,
         kHumidityEndpointId,
         &sHumidityEndpoint,
         Span<DataVersion>(sDataVersions),
