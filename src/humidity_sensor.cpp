@@ -6,6 +6,7 @@
 #include <app/util/attribute-storage.h>
 #include <app/util/endpoint-config-api.h>
 #include <lib/core/DataModelTypes.h>
+#include <protocols/interaction_model/StatusCode.h>
 
 #include <zephyr/logging/log.h>
 
@@ -14,6 +15,7 @@ LOG_MODULE_REGISTER(humidity_sensor, CONFIG_CHIP_APP_LOG_LEVEL);
 using namespace chip;
 using namespace chip::app;
 using namespace chip::app::Clusters;
+using chip::Protocols::InteractionModel::Status;
 
 /* Endpoint 1 configuration */
 static constexpr EndpointId kHumidityEndpointId = 1;
@@ -25,8 +27,6 @@ static uint16_t sMinMeasuredValue = 0;   /* MinMeasuredValue: 0% */
 static uint16_t sMaxMeasuredValue = 10000; /* MaxMeasuredValue: 100.00% */
 
 /* Attribute metadata for RelativeHumidityMeasurement cluster */
-static constexpr EmberAfAttributeMinMaxValue sHumidityMinMax[] = {};
-
 // clang-format off
 static constexpr EmberAfAttributeMetadata sHumidityAttrs[] = {
     /* MeasuredValue */
@@ -101,20 +101,23 @@ static constexpr EmberAfEndpointType sHumidityEndpoint = {
     .endpointSize = 0,
 };
 
-static const Span<const EmberAfDeviceType> sDeviceTypes = Span<const EmberAfDeviceType>({
+/* Device type array - must be a static array, not inline initializer */
+static constexpr EmberAfDeviceType sDeviceTypeArray[] = {
     { kHumidityDeviceType, 2 },
-});
+};
+
+static const Span<const EmberAfDeviceType> sDeviceTypes(sDeviceTypeArray);
 
 static DataVersion sDataVersions[ARRAY_SIZE(sHumidityClusters)];
 
 /* External attribute read callback */
-EmberAfStatus emberAfExternalAttributeReadCallback(
+Status emberAfExternalAttributeReadCallback(
     EndpointId endpoint, ClusterId clusterId,
     const EmberAfAttributeMetadata *attributeMetadata,
     uint8_t *buffer, uint16_t maxReadLength)
 {
     if (endpoint != kHumidityEndpointId) {
-        return EMBER_ZCL_STATUS_FAILURE;
+        return Status::Failure;
     }
 
     if (clusterId == RelativeHumidityMeasurement::Id) {
@@ -122,24 +125,24 @@ EmberAfStatus emberAfExternalAttributeReadCallback(
 
         if (attrId == 0x0000) { /* MeasuredValue */
             memcpy(buffer, &sMeasuredValue, sizeof(sMeasuredValue));
-            return EMBER_ZCL_STATUS_SUCCESS;
+            return Status::Success;
         }
         if (attrId == 0x0001) { /* MinMeasuredValue */
             memcpy(buffer, &sMinMeasuredValue, sizeof(sMinMeasuredValue));
-            return EMBER_ZCL_STATUS_SUCCESS;
+            return Status::Success;
         }
         if (attrId == 0x0002) { /* MaxMeasuredValue */
             memcpy(buffer, &sMaxMeasuredValue, sizeof(sMaxMeasuredValue));
-            return EMBER_ZCL_STATUS_SUCCESS;
+            return Status::Success;
         }
         if (attrId == 0xFFFC) { /* FeatureMap */
             uint32_t featureMap = 0;
             memcpy(buffer, &featureMap, sizeof(featureMap));
-            return EMBER_ZCL_STATUS_SUCCESS;
+            return Status::Success;
         }
     }
 
-    return EMBER_ZCL_STATUS_FAILURE;
+    return Status::Failure;
 }
 
 CHIP_ERROR InitHumiditySensorEndpoint()
