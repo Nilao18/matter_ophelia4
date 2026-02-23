@@ -19,7 +19,7 @@ using chip::Protocols::InteractionModel::Status;
 
 /* Endpoint 1 configuration */
 static constexpr EndpointId kHumidityEndpointId = 1;
-static constexpr uint16_t kHumidityDeviceType = 0x0015; /* Humidity Sensor */
+static constexpr uint16_t kHumidityDeviceType = 0x0100; /* On/Off Light */
 
 /* Attribute storage for Relative Humidity Measurement cluster (0x0405) */
 static uint16_t sMeasuredValue = 0;
@@ -30,19 +30,18 @@ static uint16_t sMaxMeasuredValue = 10000;
 static uint16_t sIdentifyTime = 0;
 static uint8_t sIdentifyType = 0; /* None */
 
-/* Attribute storage for BooleanState cluster (0x0045) */
-static bool sStateValue = false; /* false = closed, true = open */
+/* Attribute storage for OnOff cluster (0x0006) */
+static bool sOnOffValue = false;
 
-/* BooleanState cluster attributes */
-static constexpr EmberAfAttributeMetadata sBooleanStateAttrs[] = {
-    /* StateValue */
-    { ZAP_EMPTY_DEFAULT(), 0x0000, 1, ZAP_TYPE(BOOLEAN),
+static constexpr EmberAfAttributeMetadata sOnOffAttrs[] = {
+    /* OnOff */
+    { ZAP_SIMPLE_DEFAULT(0), 0x0000, 1, ZAP_TYPE(BOOLEAN),
       ZAP_ATTRIBUTE_MASK(EXTERNAL_STORAGE) | ZAP_ATTRIBUTE_MASK(READABLE) },
     /* FeatureMap */
     { ZAP_EMPTY_DEFAULT(), 0xFFFC, 4, ZAP_TYPE(BITMAP32),
       ZAP_ATTRIBUTE_MASK(EXTERNAL_STORAGE) | ZAP_ATTRIBUTE_MASK(READABLE) },
     /* ClusterRevision */
-    { ZAP_SIMPLE_DEFAULT(1), 0xFFFD, 2, ZAP_TYPE(INT16U),
+    { ZAP_SIMPLE_DEFAULT(6), 0xFFFD, 2, ZAP_TYPE(INT16U),
       ZAP_ATTRIBUTE_MASK(READABLE) },
 };
 
@@ -151,9 +150,9 @@ static constexpr EmberAfCluster sHumidityClusters[] = {
         .eventCount = 0,
     },
     {
-        .clusterId = BooleanState::Id,
-        .attributes = sBooleanStateAttrs,
-        .attributeCount = ARRAY_SIZE(sBooleanStateAttrs),
+        .clusterId = OnOff::Id,
+        .attributes = sOnOffAttrs,
+        .attributeCount = ARRAY_SIZE(sOnOffAttrs),
         .clusterSize = 0,
         .mask = ZAP_CLUSTER_MASK(SERVER),
         .functions = nullptr,
@@ -226,9 +225,9 @@ Status emberAfExternalAttributeReadCallback(
         }
     }
 
-    if (clusterId == BooleanState::Id) {
-        if (attrId == 0x0000) { /* StateValue */
-            memcpy(buffer, &sStateValue, sizeof(sStateValue));
+    if (clusterId == OnOff::Id) {
+        if (attrId == 0x0000) { /* OnOff */
+            memcpy(buffer, &sOnOffValue, sizeof(sOnOffValue));
             return Status::Success;
         }
         if (attrId == 0xFFFC) { /* FeatureMap */
