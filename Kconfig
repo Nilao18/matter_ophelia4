@@ -9,11 +9,11 @@ mainmenu "Matter nRF Connect Template Example Application"
 if OPENTHREAD
 
 choice OPENTHREAD_NORDIC_LIBRARY_CONFIGURATION
-	default OPENTHREAD_NORDIC_LIBRARY_MTD
+	default OPENTHREAD_NORDIC_LIBRARY_FTD
 endchoice
 
 choice OPENTHREAD_DEVICE_TYPE
-	default OPENTHREAD_MTD
+	default OPENTHREAD_FTD
 endchoice
 
 endif # OPENTHREAD
